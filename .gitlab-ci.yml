@@ -1,0 +1,200 @@
+# =====================================================
+# GitLab CI/CD Pipeline
+# Inventory Management System
+# =====================================================
+
+image: php:8.2-cli
+
+variables:
+  MYSQL_ROOT_PASSWORD: root
+  MYSQL_DATABASE: inventory_test
+  MYSQL_USER: inventory_user
+  MYSQL_PASSWORD: inventory_pass
+  DB_HOST: mysql
+
+# Define pipeline stages
+stages:
+  - build
+  - test
+  - security
+  - deploy-staging
+  - deploy-production
+
+# Cache composer dependencies
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - vendor/
+
+# Services (MySQL for testing)
+services:
+  - mysql:8.0
+
+# =====================================================
+# Stage: Build
+# =====================================================
+build:
+  stage: build
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq git unzip
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+  script:
+    - composer install --prefer-dist --no-progress --no-interaction
+    - echo "✅ Dependencies installed"
+  artifacts:
+    paths:
+      - vendor/
+    expire_in: 1 hour
+
+# =====================================================
+# Stage: Test
+# =====================================================
+test:syntax:
+  stage: test
+  dependencies:
+    - build
+  script:
+    - echo "🔍 Checking PHP syntax..."
+    - find src -name "*.php" -exec php -l {} \;
+    - echo "✅ No syntax errors"
+
+test:migrations:
+  stage: test
+  dependencies:
+    - build
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq default-mysql-client
+    - cp .env.example .env
+    - echo "DB_HOST=mysql" >> .env
+    - echo "DB_DATABASE=inventory_test" >> .env
+    - echo "DB_USERNAME=root" >> .env
+    - echo "DB_PASSWORD=root" >> .env
+  script:
+    - echo "⏳ Waiting for MySQL..."
+    - while ! mysqladmin ping -hmysql -uroot -proot --silent; do sleep 1; done
+    - echo "🗄️ Running migrations..."
+    - php database/migrate.php
+    - echo "✅ Migrations successful"
+    - mysql -hmysql -uroot -proot -e "USE inventory_test; SHOW TABLES;"
+
+test:health:
+  stage: test
+  dependencies:
+    - build
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq default-mysql-client
+    - cp .env.example .env
+    - echo "DB_HOST=mysql" >> .env
+    - echo "DB_DATABASE=inventory_test" >> .env
+    - echo "DB_USERNAME=root" >> .env
+    - echo "DB_PASSWORD=root" >> .env
+    - while ! mysqladmin ping -hmysql -uroot -proot --silent; do sleep 1; done
+    - php database/migrate.php
+  script:
+    - echo "🏥 Running health check..."
+    - php -S localhost:8000 -t public > /dev/null 2>&1 &
+    - sleep 3
+    - apt-get install -y -qq curl
+    - curl -f http://localhost:8000/health || exit 1
+    - echo "✅ Health check passed"
+
+# =====================================================
+# Stage: Security
+# =====================================================
+security:audit:
+  stage: security
+  dependencies:
+    - build
+  before_script:
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+  script:
+    - echo "🔒 Running security audit..."
+    - composer audit || true
+    - echo "✅ Security check completed"
+  allow_failure: true
+
+# =====================================================
+# Stage: Deploy to Staging
+# =====================================================
+deploy:staging:
+  stage: deploy-staging
+  environment:
+    name: staging
+    url: https://staging.inventory.example.com
+  only:
+    - develop
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq openssh-client rsync
+    - eval $(ssh-agent -s)
+    - echo "$STAGING_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan $STAGING_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - echo "🚀 Deploying to staging..."
+    - ssh $STAGING_USER@$STAGING_HOST << 'EOF'
+        set -e
+        cd $STAGING_PATH
+        echo "📥 Pulling latest code..."
+        git pull origin develop
+        echo "📦 Installing dependencies..."
+        composer install --no-dev --optimize-autoloader
+        echo "🗄️ Running migrations..."
+        php database/migrate.php
+        echo "🔧 Setting permissions..."
+        chmod -R 755 storage database
+        echo "🔄 Restarting services..."
+        sudo systemctl reload php-fpm || true
+        echo "✅ Staging deployment completed!"
+      EOF
+    - echo "🏥 Running health check..."
+    - apt-get install -y -qq curl
+    - sleep 3
+    - curl -f https://staging.inventory.example.com/health || exit 1
+    - echo "✅ Staging is healthy!"
+
+# =====================================================
+# Stage: Deploy to Production
+# =====================================================
+deploy:production:
+  stage: deploy-production
+  environment:
+    name: production
+    url: https://inventory.example.com
+  only:
+    - main
+  when: manual  # Requires manual approval
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq openssh-client rsync
+    - eval $(ssh-agent -s)
+    - echo "$PRODUCTION_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan $PRODUCTION_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - echo "🚀 Deploying to production..."
+    - ssh $PRODUCTION_USER@$PRODUCTION_HOST << 'EOF'
+        set -e
+        cd $PRODUCTION_PATH
+        echo "🔒 Creating backup..."
+        ./backup.sh
+        echo "📥 Pulling latest code..."
+        git pull origin main
+        echo "🚀 Running deployment script..."
+        ./deploy.sh production
+        echo "✅ Production deployment completed!"
+      EOF
+    - echo "🏥 Running health check..."
+    - apt-get install -y -qq curl
+    - sleep 5
+    - curl -f https://inventory.example.com/health || exit 1
+    - echo "✅ Production is healthy!"
+  after_script:
+    - echo "📧 Notification: Production deployment completed"

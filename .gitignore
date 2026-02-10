@@ -1,0 +1,13 @@
+vendor/
+.env
+.idea/
+.vscode/
+composer.lock
+node_modules/
+.env
+deploy_key
+deploy_key.pub
+backups/
+.claude/
+nul
+storage/logs/*.log
