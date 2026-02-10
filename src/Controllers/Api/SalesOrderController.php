@@ -51,14 +51,19 @@ class SalesOrderController
 
     public function store(): JsonResponse
     {
+        // Read JSON input (API requests) or fall back to $_POST (form submissions)
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
         $data = [
-            'reference' => $_POST['reference'] ?? 'SO-' . time(),
-            'customer_name' => $_POST['customer_name'] ?? '',
+            'reference' => $input['reference'] ?? 'SO-' . time(),
+            'customer_name' => $input['customer_name'] ?? '',
             'status' => 'draft',
             'created_by' => $_SESSION['user']['id'] ?? null,
         ];
 
-        $items = json_decode($_POST['items'] ?? '[]', true);
+        $items = is_string($input['items'] ?? null)
+            ? json_decode($input['items'], true)
+            : ($input['items'] ?? []);
 
         $validator = Validator::make($data, [
             'customer_name' => 'required|min:3',
@@ -106,9 +111,12 @@ class SalesOrderController
             return JsonResponse::error('Cannot update fulfilled orders', [], 400);
         }
 
+        // Read JSON input (API requests) or fall back to $_POST (form submissions)
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
         $data = [
-            'customer_name' => $_POST['customer_name'] ?? $order->customer_name,
-            'reference' => $_POST['reference'] ?? $order->reference,
+            'customer_name' => $input['customer_name'] ?? $order->customer_name,
+            'reference' => $input['reference'] ?? $order->reference,
         ];
 
         $order->update($data);

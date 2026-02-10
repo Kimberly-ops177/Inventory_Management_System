@@ -53,14 +53,19 @@ class PurchaseOrderController
 
     public function store(): JsonResponse
     {
+        // Read JSON input (API requests) or fall back to $_POST (form submissions)
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
         $data = [
-            'supplier_id' => $_POST['supplier_id'] ?? null,
-            'reference' => $_POST['reference'] ?? 'PO-' . time(),
+            'supplier_id' => $input['supplier_id'] ?? null,
+            'reference' => $input['reference'] ?? 'PO-' . time(),
             'status' => 'draft',
             'created_by' => $_SESSION['user']['id'] ?? null,
         ];
 
-        $items = json_decode($_POST['items'] ?? '[]', true);
+        $items = is_string($input['items'] ?? null)
+            ? json_decode($input['items'], true)
+            : ($input['items'] ?? []);
 
         $validator = Validator::make($data, [
             'supplier_id' => 'required|exists:suppliers,id',
@@ -103,9 +108,12 @@ class PurchaseOrderController
             return JsonResponse::error('Only draft orders can be updated', [], 400);
         }
 
+        // Read JSON input (API requests) or fall back to $_POST (form submissions)
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
         $data = [
-            'supplier_id' => $_POST['supplier_id'] ?? $order->supplier_id,
-            'reference' => $_POST['reference'] ?? $order->reference,
+            'supplier_id' => $input['supplier_id'] ?? $order->supplier_id,
+            'reference' => $input['reference'] ?? $order->reference,
         ];
 
         $order->update($data);
@@ -142,7 +150,12 @@ class PurchaseOrderController
             return JsonResponse::error('Order already received', [], 400);
         }
 
-        $receivedItems = json_decode($_POST['items'] ?? '[]', true);
+        // Read JSON input (API requests) or fall back to $_POST (form submissions)
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
+        $receivedItems = is_string($input['items'] ?? null)
+            ? json_decode($input['items'], true)
+            : ($input['items'] ?? []);
 
         if (empty($receivedItems)) {
             return JsonResponse::error('No items to receive', [], 422);
