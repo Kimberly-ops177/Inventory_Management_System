@@ -2,10 +2,9 @@ services:
   # Web Service - PHP Application
   - type: web
     name: inventory-system
-    env: php
+    runtime: docker
     plan: free
-    buildCommand: chmod +x build.sh && ./build.sh
-    startCommand: php -S 0.0.0.0:$PORT -t public
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: APP_ENV
         value: production
