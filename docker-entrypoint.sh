@@ -1,5 +1,9 @@
 #!/bin/bash
 
+echo "Starting PHP server on port ${PORT:-8000}..."
+php -S 0.0.0.0:${PORT:-8000} -t public &
+SERVER_PID=$!
+
 echo "Waiting for database to be ready..."
 for i in {1..30}; do
     if php -r "
@@ -25,5 +29,5 @@ done
 echo "Running database migrations..."
 php database/migrate.php || echo "Warning: Migrations failed or already applied"
 
-echo "Starting PHP server on port ${PORT:-8000}..."
-exec php -S 0.0.0.0:${PORT:-8000} -t public
+echo "Server is running with PID $SERVER_PID"
+wait $SERVER_PID
