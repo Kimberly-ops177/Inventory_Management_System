@@ -42,7 +42,7 @@ services:
         fromDatabase:
           name: inventory-db
           property: password
-    healthCheckPath: /health
+    healthCheckPath: /ping.php
 
 databases:
   # MySQL Database
