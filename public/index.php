@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+// Quick health check for port detection (before loading anything)
+if ($_SERVER['REQUEST_METHOD'] === 'HEAD' && $_SERVER['REQUEST_URI'] === '/') {
+    http_response_code(200);
+    exit;
+}
+
 require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../src/bootstrap.php';
 
