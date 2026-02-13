@@ -5,10 +5,7 @@ declare(strict_types=1);
 // Remove this file after setup is complete!
 
 require __DIR__ . '/../vendor/autoload.php';
-
-// Load environment
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->load();
+require __DIR__ . '/../src/bootstrap.php';
 
 ?>
 <!DOCTYPE html>
@@ -44,7 +41,8 @@ $dotenv->load();
         .success { color: #28a745; padding: 10px; background: #d4edda; border-radius: 4px; margin: 10px 0; }
         .error { color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 4px; margin: 10px 0; }
         .warning { color: #856404; padding: 10px; background: #fff3cd; border-radius: 4px; margin: 10px 0; }
-        pre { background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+        code { background: #f8f9fa; padding: 2px 6px; border-radius: 3px; }
     </style>
 </head>
 <body>
@@ -56,57 +54,48 @@ $dotenv->load();
         </div>
 
         <?php
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed'])) {
             echo '<h2>Running Database Seed...</h2>';
-            echo '<pre>';
 
+            ob_start();
             try {
-                // Run the seed script
-                $output = [];
-                $returnCode = 0;
-                exec('php ' . __DIR__ . '/../database/seed.php 2>&1', $output, $returnCode);
+                // Directly include and run seed script
+                include __DIR__ . '/../database/seed.php';
 
-                echo implode("\n", $output);
+                $output = ob_get_clean();
 
-                if ($returnCode === 0) {
-                    echo '</pre>';
-                    echo '<div class="success"><strong>✓ Success!</strong> Database has been seeded.</div>';
-                    echo '<p><strong>Default Login Credentials:</strong></p>';
-                    echo '<ul>';
-                    echo '<li>Email: <code>admin@example.com</code></li>';
-                    echo '<li>Password: <code>password</code></li>';
-                    echo '</ul>';
-                    echo '<p><a href="/login"><button>Go to Login Page</button></a></p>';
-                    echo '<div class="warning"><strong>⚠️ Important:</strong> Delete public/setup.php now!</div>';
-                } else {
-                    echo '</pre>';
-                    echo '<div class="error"><strong>✗ Error:</strong> Seeding failed. Check the output above.</div>';
-                }
+                echo '<pre>' . htmlspecialchars($output) . '</pre>';
+                echo '<div class="success"><strong>✓ Success!</strong> Database has been seeded.</div>';
+                echo '<p><strong>Default Login Credentials:</strong></p>';
+                echo '<ul>';
+                echo '<li>Email: <code>admin@example.com</code></li>';
+                echo '<li>Password: <code>password</code></li>';
+                echo '</ul>';
+                echo '<p><a href="/login"><button>Go to Login Page</button></a></p>';
+                echo '<div class="warning"><strong>⚠️ Important:</strong> Delete public/setup.php now!</div>';
+
             } catch (Exception $e) {
-                echo '</pre>';
+                $output = ob_get_clean();
+                echo '<pre>' . htmlspecialchars($output) . '</pre>';
                 echo '<div class="error"><strong>✗ Exception:</strong> ' . htmlspecialchars($e->getMessage()) . '</div>';
+                echo '<pre>' . htmlspecialchars($e->getTraceAsString()) . '</pre>';
             }
         } else {
             ?>
             <p>This will populate your database with:</p>
             <ul>
-                <li>Admin user account</li>
-                <li>Sample categories</li>
-                <li>Sample suppliers</li>
-                <li>Sample products</li>
-                <li>Sample purchase orders</li>
-                <li>Sample sales orders</li>
+                <li>✓ Admin user account</li>
+                <li>✓ Sample categories (Electronics, Furniture, etc.)</li>
+                <li>✓ Sample suppliers</li>
+                <li>✓ Sample products with stock</li>
+                <li>✓ Sample purchase orders</li>
+                <li>✓ Sample sales orders</li>
             </ul>
 
             <form method="POST">
+                <input type="hidden" name="seed" value="1">
                 <button type="submit">Seed Database Now</button>
             </form>
-
-            <hr style="margin: 30px 0;">
-
-            <h3>Manual Alternative</h3>
-            <p>If you have SSH access, you can also run:</p>
-            <pre>php database/seed.php</pre>
             <?php
         }
         ?>
