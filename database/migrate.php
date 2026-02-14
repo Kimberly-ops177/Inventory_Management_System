@@ -111,6 +111,20 @@ try {
 
     // Filter migration files based on database driver
     $migrationFiles = [];
+    $skipGeneric = [];
+
+    // First pass: identify pgsql-specific files and mark their generic counterparts to skip
+    if ($isPgsql) {
+        foreach ($allMigrationFiles as $file) {
+            $basename = basename($file);
+            if (strpos($basename, '_pgsql.sql') !== false) {
+                $genericVersion = str_replace('_pgsql.sql', '.sql', $basename);
+                $skipGeneric[$genericVersion] = true;
+            }
+        }
+    }
+
+    // Second pass: build final migration list
     foreach ($allMigrationFiles as $file) {
         $basename = basename($file);
 
@@ -122,20 +136,12 @@ try {
             continue; // Skip PostgreSQL-specific files
         }
 
-        // For PostgreSQL, prefer _pgsql.sql files over generic ones
-        if ($isPgsql) {
-            $genericVersion = str_replace('_pgsql.sql', '.sql', $basename);
-            if ($basename !== $genericVersion && in_array($migrationDir . '/' . $genericVersion, $allMigrationFiles)) {
-                // This is a pgsql-specific file, add it and skip the generic one later
-                $migrationFiles[] = $file;
-                // Mark the generic one to skip
-                $skipGeneric[$genericVersion] = true;
-            } elseif (!isset($skipGeneric[$basename])) {
-                $migrationFiles[] = $file;
-            }
-        } else {
-            $migrationFiles[] = $file;
+        // Skip generic files if a driver-specific version exists
+        if (isset($skipGeneric[$basename])) {
+            continue;
         }
+
+        $migrationFiles[] = $file;
     }
 
     sort($migrationFiles);
