@@ -132,7 +132,7 @@ class StockService
             SELECT *
             FROM stock_movements
             WHERE product_id = ?
-              AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+              AND created_at >= CURRENT_TIMESTAMP - (? || ' days')::INTERVAL
             ORDER BY created_at DESC
         ");
         $stmt->execute([$productId, $days]);
