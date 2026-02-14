@@ -45,8 +45,7 @@ services:
     healthCheckPath: /ping.php
 
 databases:
-  # MySQL Database
+  # PostgreSQL Database (Free tier)
   - name: inventory-db
     plan: free
     databaseName: inventory_production
-    user: inventory_user

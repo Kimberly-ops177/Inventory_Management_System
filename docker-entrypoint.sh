@@ -15,11 +15,21 @@ echo "✓ Server started with PID $SERVER_PID"
   for i in {1..30}; do
       if php -r "
           try {
-              \$dsn = sprintf('mysql:host=%s;port=%s;dbname=%s',
-                  getenv('DB_HOST'),
-                  getenv('DB_PORT') ?: '3306',
-                  getenv('DB_DATABASE')
-              );
+              \$driver = getenv('DB_DRIVER') ?: 'pgsql';
+              \$port = getenv('DB_PORT') ?: (\$driver === 'mysql' ? '3306' : '5432');
+              if (\$driver === 'mysql') {
+                  \$dsn = sprintf('mysql:host=%s;port=%s;dbname=%s',
+                      getenv('DB_HOST'),
+                      \$port,
+                      getenv('DB_DATABASE')
+                  );
+              } else {
+                  \$dsn = sprintf('pgsql:host=%s;port=%s;dbname=%s',
+                      getenv('DB_HOST'),
+                      \$port,
+                      getenv('DB_DATABASE')
+                  );
+              }
               \$pdo = new PDO(\$dsn, getenv('DB_USERNAME'), getenv('DB_PASSWORD'));
               exit(0);
           } catch (Exception \$e) {

@@ -14,12 +14,18 @@ class Database
     {
         if (self::$connection === null) {
             $host = $_ENV['DB_HOST'] ?? '127.0.0.1';
-            $port = (int)($_ENV['DB_PORT'] ?? 3306);
+            $port = (int)($_ENV['DB_PORT'] ?? 5432);
             $dbName = $_ENV['DB_DATABASE'] ?? 'inventory_db';
             $user = $_ENV['DB_USERNAME'] ?? 'inventory_user';
             $pass = $_ENV['DB_PASSWORD'] ?? 'inventory_pass';
 
-            $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, $port, $dbName);
+            // Support both PostgreSQL and MySQL
+            $driver = $_ENV['DB_DRIVER'] ?? 'pgsql';
+            if ($driver === 'mysql') {
+                $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, $port, $dbName);
+            } else {
+                $dsn = sprintf('pgsql:host=%s;port=%d;dbname=%s', $host, $port, $dbName);
+            }
 
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
