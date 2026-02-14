@@ -11,9 +11,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed'])) {
     // Now load everything needed
     require __DIR__ . '/../vendor/autoload.php';
 
-    // Load environment manually
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-    $dotenv->load();
+    // Load environment manually (only if .env exists)
+    if (file_exists(__DIR__ . '/../.env')) {
+        $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+        $dotenv->load();
+    }
+    // Otherwise, environment variables are already set by hosting platform
 
     // Start session manually
     if (session_status() === PHP_SESSION_NONE) {
