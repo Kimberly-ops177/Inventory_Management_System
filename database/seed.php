@@ -16,23 +16,33 @@ echo "=== Database Seeder ===\n\n";
 try {
     $stockService = new StockService();
 
-    // Create admin role if it doesn't exist
-    echo "Creating roles...\n";
-    $adminRole = Role::create(['name' => 'admin']);
-    echo "✓ Admin role created (ID: {$adminRole->id})\n";
+    // Get or create admin role
+    echo "Checking roles...\n";
+    $adminRole = Role::where('name', 'admin')->first();
+    if (!$adminRole) {
+        $adminRole = Role::create(['name' => 'admin']);
+        echo "✓ Admin role created (ID: {$adminRole->id})\n";
+    } else {
+        echo "✓ Admin role already exists (ID: {$adminRole->id})\n";
+    }
 
-    // Create admin user
-    echo "\nCreating admin user...\n";
-    $admin = new User();
-    $admin->fill([
-        'role_id' => $adminRole->id,
-        'name' => 'Administrator',
-        'email' => 'admin@example.com',
-        'is_active' => 1
-    ]);
-    $admin->setPassword('password');
-    $admin->save();
-    echo "✓ Admin user created (email: admin@example.com, password: password)\n";
+    // Get or create admin user
+    echo "\nChecking admin user...\n";
+    $admin = User::where('email', 'admin@example.com')->first();
+    if (!$admin) {
+        $admin = new User();
+        $admin->fill([
+            'role_id' => $adminRole->id,
+            'name' => 'Administrator',
+            'email' => 'admin@example.com',
+            'is_active' => 1
+        ]);
+        $admin->setPassword('password');
+        $admin->save();
+        echo "✓ Admin user created (email: admin@example.com, password: password)\n";
+    } else {
+        echo "✓ Admin user already exists (email: admin@example.com)\n";
+    }
 
     // Create categories
     echo "\nCreating categories...\n";
