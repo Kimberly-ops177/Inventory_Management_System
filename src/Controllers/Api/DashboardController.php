@@ -31,11 +31,11 @@ class DashboardController
         $totalProducts = (int)$stmt->fetchColumn();
 
         // Low stock alerts count
-        $stmt = $this->db->query("SELECT COUNT(*) FROM stock_alerts WHERE is_resolved = 0");
+        $stmt = $this->db->query("SELECT COUNT(*) FROM stock_alerts WHERE is_resolved = FALSE");
         $lowStockAlerts = (int)$stmt->fetchColumn();
 
         // Today's sales orders
-        $stmt = $this->db->query("SELECT COUNT(*) FROM sales_orders WHERE DATE(created_at) = CURDATE()");
+        $stmt = $this->db->query("SELECT COUNT(*) FROM sales_orders WHERE DATE(created_at) = CURRENT_DATE");
         $todaysSalesOrders = (int)$stmt->fetchColumn();
 
         // Pending purchase orders

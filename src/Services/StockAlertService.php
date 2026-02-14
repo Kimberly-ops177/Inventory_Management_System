@@ -55,7 +55,7 @@ class StockAlertService
             // Check if there's already an active alert
             $stmt = $this->db->prepare("
                 SELECT COUNT(*) FROM stock_alerts
-                WHERE product_id = ? AND is_resolved = 0
+                WHERE product_id = ? AND is_resolved = FALSE
             ");
             $stmt->execute([$productId]);
             $hasActiveAlert = (int)$stmt->fetchColumn() > 0;
@@ -67,7 +67,7 @@ class StockAlertService
                     'triggered_at' => date('Y-m-d H:i:s'),
                     'threshold' => $reorderLevel,
                     'current_stock' => $currentStock,
-                    'is_resolved' => 0
+                    'is_resolved' => false
                 ]);
 
                 return true;
@@ -76,8 +76,8 @@ class StockAlertService
             // Stock is above reorder level, auto-resolve any active alerts
             $stmt = $this->db->prepare("
                 UPDATE stock_alerts
-                SET is_resolved = 1
-                WHERE product_id = ? AND is_resolved = 0
+                SET is_resolved = TRUE
+                WHERE product_id = ? AND is_resolved = FALSE
             ");
             $stmt->execute([$productId]);
         }

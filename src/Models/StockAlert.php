@@ -36,7 +36,7 @@ class StockAlert extends Model
 
     public function resolve(): bool
     {
-        $this->attributes['is_resolved'] = 1;
+        $this->attributes['is_resolved'] = true;
         return $this->save();
     }
 
@@ -47,7 +47,7 @@ class StockAlert extends Model
             "SELECT sa.*, p.name as product_name, p.sku
              FROM stock_alerts sa
              JOIN products p ON sa.product_id = p.id
-             WHERE sa.is_resolved = 0
+             WHERE sa.is_resolved = FALSE
              ORDER BY sa.triggered_at DESC"
         );
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);

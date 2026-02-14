@@ -29,10 +29,10 @@ class DashboardController
         $stmt = $this->db->query("SELECT COUNT(*) FROM products");
         $totalProducts = (int)$stmt->fetchColumn();
 
-        $stmt = $this->db->query("SELECT COUNT(*) FROM stock_alerts WHERE is_resolved = 0");
+        $stmt = $this->db->query("SELECT COUNT(*) FROM stock_alerts WHERE is_resolved = FALSE");
         $lowStockAlerts = (int)$stmt->fetchColumn();
 
-        $stmt = $this->db->query("SELECT COUNT(*) FROM sales_orders WHERE DATE(created_at) = CURDATE()");
+        $stmt = $this->db->query("SELECT COUNT(*) FROM sales_orders WHERE DATE(created_at) = CURRENT_DATE");
         $todaysSalesOrders = (int)$stmt->fetchColumn();
 
         $stmt = $this->db->query("SELECT COUNT(*) FROM purchase_orders WHERE status IN ('draft', 'ordered')");
