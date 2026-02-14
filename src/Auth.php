@@ -17,7 +17,7 @@ class Auth
 
     public function attempt(string $email, string $password): bool
     {
-        $stmt = $this->db->prepare('SELECT u.id, u.name, u.email, u.password_hash, r.name AS role FROM users u JOIN roles r ON u.role_id = r.id WHERE u.email = :email AND u.is_active = 1 LIMIT 1');
+        $stmt = $this->db->prepare('SELECT u.id, u.name, u.email, u.password_hash, r.name AS role FROM users u JOIN roles r ON u.role_id = r.id WHERE u.email = :email AND u.is_active = TRUE LIMIT 1');
         $stmt->execute(['email' => $email]);
         $user = $stmt->fetch();
 

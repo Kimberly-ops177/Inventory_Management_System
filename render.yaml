@@ -9,13 +9,13 @@ services:
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
-        value: "true"
+        value: "false"
       - key: APP_URL
         sync: false
       - key: SESSION_SECURE
-        value: true
+        value: "true"
       - key: SESSION_HTTPONLY
-        value: true
+        value: "true"
       - key: SESSION_SAMESITE
         value: Strict
       - key: DATABASE_URL
