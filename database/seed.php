@@ -18,21 +18,23 @@ try {
 
     // Get or create admin role
     echo "Checking roles...\n";
-    $adminRole = Role::where('name', 'admin')->first();
-    if (!$adminRole) {
+    $roles = Role::where('name', 'admin');
+    if (empty($roles)) {
         $adminRole = Role::create(['name' => 'admin']);
-        echo "✓ Admin role created (ID: {$adminRole->id})\n";
+        $adminRoleId = $adminRole->id;
+        echo "✓ Admin role created (ID: {$adminRoleId})\n";
     } else {
-        echo "✓ Admin role already exists (ID: {$adminRole->id})\n";
+        $adminRoleId = $roles[0]['id'];
+        echo "✓ Admin role already exists (ID: {$adminRoleId})\n";
     }
 
     // Get or create admin user
     echo "\nChecking admin user...\n";
-    $admin = User::where('email', 'admin@example.com')->first();
-    if (!$admin) {
+    $users = User::where('email', 'admin@example.com');
+    if (empty($users)) {
         $admin = new User();
         $admin->fill([
-            'role_id' => $adminRole->id,
+            'role_id' => $adminRoleId,
             'name' => 'Administrator',
             'email' => 'admin@example.com',
             'is_active' => 1
